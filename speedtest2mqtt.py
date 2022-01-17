@@ -37,7 +37,12 @@ def call_speedtest():
 def on_connect(client, obj, flacs, rc):
     logging.info("MQTT connected")
     client.publish(MQTT_TOPIC + '/online', True, qos=1, retain=True)
-    
+    client.will_set(MQTT_TOPIC + '/online', False, qos=1, retain=True)
+    client.subscribe("%s/cmd" % MQTT_TOPIC)
+
+def on_subscribe(client, userdata, mid, granted_qos):
+    logging.info("Topic subcribed)
+
 def on_message(client, userdata, message):
     logging.info("MQTT message received")
 
@@ -48,13 +53,12 @@ def on_message(client, userdata, message):
         if payload == "true":
             call_speedtest()
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 logging.info("Starting speedtest2mqtt")
 client = mqtt.Client("speedtest")
 client.on_connect=on_connect
 client.on_message=on_message
-client.will_set(MQTT_TOPIC + '/online', False, qos=1, retain=True)
+client.on_subscribe=on_subscribe
 client.connect(MQTT_HOST, MQTT_PORT)
-client.subscribe("%s/cmd" % MQTT_TOPIC)
 
 client.loop_forever()
